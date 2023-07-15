@@ -19,6 +19,7 @@ async function getSearchResult(browser: Browser, query: string) {
 async function run() {
   const browser = await puppeteer.launch();
   const resultUrls = await getSearchResult(browser, 'irotenya');
+  console.log(resultUrls);
   await browser.close();
 }
 
