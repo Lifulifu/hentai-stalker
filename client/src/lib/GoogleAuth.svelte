@@ -6,24 +6,46 @@
   let loginContainer: HTMLDivElement;
 
   onMount(() => {
-    let gsiScript = document.createElement("script");
-    gsiScript.src = "https://accounts.google.com/gsi/client";
-    gsiScript.defer = true;
-    gsiScript.async = true;
-    document.body.appendChild(gsiScript);
+    // load google js api script
+    let script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.defer = true;
+    script.async = true;
+    document.body.appendChild(script);
 
-    gsiScript.onload = () => {
+    // use 'google' variable from the script
+    script.onload = (e) => {
       google.accounts.id.initialize({
         client_id: clientId,
         callback: handleCredentialResponse,
       });
-      google.accounts.id.renderButton(loginContainer, { theme: "filled_blue" });
-      google.accounts.id.prompt();
+      google.accounts.id.renderButton(loginContainer, {
+        type: "standard",
+      });
     };
   });
 
-  function handleCredentialResponse(e) {
-    console.log(e);
+  async function handleCredentialResponse(res) {
+    var token = res.credential;
+    const url = "/hentai-stalker/auth";
+    try {
+      let authResult = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ token }),
+      });
+      if (!authResult.ok) {
+        dispatch("failed");
+        return;
+      }
+      authResult = await authResult.json();
+      dispatch("success", authResult);
+    } catch (e) {
+      console.error("authorization failed.", e);
+      dispatch("failed");
+    }
   }
 </script>
 
