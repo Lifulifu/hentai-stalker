@@ -40,6 +40,31 @@ async function getGalleryData(url: string) {
   return res.json();
 }
 
+function createGalleryTable(db: sqlite3.Database) {
+  db.run(`
+    CREATE TABLE galleries (
+      date_added date,
+      url varchar(2083),
+      thumb_url varchar(2083)
+    );
+  `, (err) => {
+    if (err) console.error('error creating table:', err.message);
+  });
+}
+
+async function createUsersTable(db: sqlite3.Database) {
+  db.run(`
+    CREATE TABLE users (
+      date_added date,
+      email varchar(2048),
+      picture_url varchar(2083),
+      name varchar(2048)
+    );
+  `, (err) => {
+    if (err) console.error('error creating table:', err.message);
+  });
+}
+
 async function run() {
   // const browser = await puppeteer.launch();
   // const resultUrls = await searchGalleryUrls(browser, 'irotenya');
@@ -49,18 +74,9 @@ async function run() {
   const db = new sqlite3.Database('db/main.db', (err) => {
     if (err) console.error('error connecting to db:', err.message);
   });
-  // db.run('DROP TABLE galleries');
-  db.run(`
-    CREATE TABLE galleries (
-      url varchar(2083),
-      thumb_url varchar(2083),
-      date_added date
-    );
-  `, (err) => {
-    if (err) console.error('error creating table:', err.message);
-  });
+
   const insertQuery = `
-    INSERT INTO galleries (url, thumb_url, date_added) 
+    INSERT INTO galleries (url, thumb_url, date_added)
     VALUES (?, ?, CURRENT_DATE)
   `;
   db.run(insertQuery, ['asdf', 'fdsa'], (err) => {
