@@ -2,7 +2,8 @@
   import { onMount, createEventDispatcher } from "svelte";
   const dispatch = createEventDispatcher();
 
-  export let clientId;
+  export let clientId: string;
+  export let authUrl: string;
   let loginContainer: HTMLDivElement;
 
   onMount(() => {
@@ -27,9 +28,8 @@
 
   async function handleCredentialResponse(res) {
     var token = res.credential;
-    const url = "/hentai-stalker/auth";
     try {
-      let authResult = await fetch(url, {
+      let authResult = await fetch(authUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -41,7 +41,7 @@
         return;
       }
       authResult = await authResult.json();
-      dispatch("success", authResult);
+      dispatch("success", { ...authResult, token });
     } catch (e) {
       console.error("authorization failed.", e);
       dispatch("failed");

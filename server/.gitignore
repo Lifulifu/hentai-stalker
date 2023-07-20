@@ -1,5 +1,5 @@
 screenshots
-db
+db/*.db
 client_secret.json
 
 # Logs

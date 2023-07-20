@@ -58,23 +58,68 @@ async function authMiddleware(req: Request, res: Response, next: NextFunction) {
 
 app.use('/hentai-stalker', express.static('../client'));
 
-app.post('/hentai-stalker/auth', async (req, res) => {
+app.post('/hentai-stalker/api/auth', async (req, res) => {
   const userData = await verifyUser(req.body.token);
   if (!userData) {
     res.status(403).json({ error: "User verification failed" });
     return;
   };
 
-  db.run(`
-    REPLACE INTO Users (UserId, Email, PictureUrl, Name, DateAdded)
-    VALUES (?, ?, ?, ?, CURRENT_DATE);`,
+  db.run(
+    `REPLACE INTO Users (UserId, Email, PictureUrl, Name, AddedTime)
+    VALUES (?, ?, ?, ?, DATETIME('now'));`,
     [userData.sub, userData.email.toLowerCase(), userData.picture, userData.name],
     (err) => {
-      if (err) console.error('error adding user', userData);
+      if (err) {
+        console.error('Error adding user', userData, err.message);
+        res.status(500);
+      }
+      res.status(200).json({ user: userData });
     }
   );
+});
 
-  res.status(200).json({ user: userData });
+// add keyword
+app.post('/hentai-stalker/api/keywords/add', async (req, res) => {
+  // req.body = { token, keywordId, keyword }
+  const userData = await verifyUser(req.body.token);
+  if (!userData) {
+    res.status(403).json({ error: "User verification failed" });
+    return;
+  };
+
+  db.run(
+    `INSERT INTO keywords (UserId, KeywordId, Keyword, AddedTime)
+    VALUES (?, ?, ?, DATETIME('now'));`,
+    [userData.sub, req.body.keywordId, req.body.keyword],
+    (err) => {
+      if (err) {
+        console.error('Error adding keyword', req.body, err.message);
+        res.status(500);
+      }
+      res.status(200);
+    }
+  );
+});
+
+// get keywords
+app.get('/hentai-stalker/api/keywords', async (req, res) => {
+  // req.body = { token }
+  const userData = await verifyUser(req.body.token);
+  if (!userData) {
+    res.status(403).json({ error: "User verification failed" });
+    return;
+  };
+
+  db.all(
+    `SELECT (Keyword, AddedTime) FROM Keywords WHERE UserId = ?`, [userData.sub],
+    (err, rows) => {
+      if (err) {
+        console.error('error getting keywords', req.body, err.message);
+        res.status(500);
+      }
+      res.status(200).json(rows);
+    });
 });
 
 app.listen(8034, () => console.log('Server is running on port 8034'));
