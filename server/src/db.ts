@@ -4,10 +4,10 @@ export function createGalleryTable(db: sqlite3.Database) {
   db.run(`
     CREATE TABLE Galleries (
       SearchBatchId INT,
-      DateAdded DATE,
       Url TEXT,
       ThumbUrl TEXT,
       Title TEXT
+      DateAdded DATE,
     );
   `, (err) => {
     if (err) console.error('error creating table', err.message);
@@ -17,9 +17,9 @@ export function createGalleryTable(db: sqlite3.Database) {
 export async function createKeywordsTable(db: sqlite3.Database) {
   db.run(`
     CREATE TABLE Keywords (
-      DateAdded DATE,
       UserId INT,
       Keyword TEXT,
+      DateAdded DATE,
       FOREIGN KEY(UserId) REFERENCES Users(UserId)
     );
   `, (err) => {
@@ -28,13 +28,14 @@ export async function createKeywordsTable(db: sqlite3.Database) {
 }
 
 export async function createUsersTable(db: sqlite3.Database) {
+  // UserId is google tokenPayload's 'sub' field
   db.run(`
     CREATE TABLE Users (
-      UserId INT AUTO_INCREMENT PRIMARY KEY,
-      DateAdded DATE,
+      UserId TEXT PRIMARY KEY,
       Email TEXT,
       PictureUrl TEXT,
-      Name TEXT
+      Name TEXT,
+      DateAdded DATE
     );
   `, (err) => {
     if (err) console.error('error creating table', err.message);
