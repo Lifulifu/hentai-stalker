@@ -17,3 +17,10 @@ export interface GalleryMetaData {
   torrents: any[], // [],
   tags: string[]; // [Array]
 }
+
+export interface UserData {
+  id: string,
+  pictureUrl: string,
+  name: string,
+  email: string;
+}

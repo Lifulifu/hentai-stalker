@@ -4,7 +4,7 @@
 
   export let clientId: string;
   export let authUrl: string;
-  let loginContainer: HTMLDivElement;
+  let loginContainer: HTMLElement;
 
   onMount(() => {
     // load google js api script
@@ -21,7 +21,8 @@
         callback: handleCredentialResponse,
       });
       google.accounts.id.renderButton(loginContainer, {
-        type: "standard",
+        type: "icon",
+        size: "large",
       });
     };
   });
@@ -49,4 +50,4 @@
   }
 </script>
 
-<div bind:this={loginContainer} />
+<span bind:this={loginContainer} />

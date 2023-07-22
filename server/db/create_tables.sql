@@ -1,13 +1,17 @@
 -- SQLite
--- CREATE TABLE Users (
---   UserId TEXT PRIMARY KEY,
---   Email TEXT,
---   PictureUrl TEXT,
---   Name TEXT,
---   AddedTime DATETIME
--- );
+-- DROP TABLE Users;
+-- DROP TABLE Keywords;
+-- DROP TABLE Galleries;
+-- DROP TABLE WhiteList;
 
-DROP TABLE Keywords;
+CREATE TABLE Users (
+  UserId TEXT PRIMARY KEY,
+  Email TEXT,
+  PictureUrl TEXT,
+  Name TEXT,
+  AddedTime DATETIME
+);
+
 CREATE TABLE Keywords (
   UserId TEXT,
   Keyword TEXT,
@@ -16,19 +20,17 @@ CREATE TABLE Keywords (
   FOREIGN KEY(UserId) REFERENCES Users(UserId)
 );
 
--- DROP TABLE Galleries;
--- CREATE TABLE Galleries (
---   UserId TEXT,
---   SearchBatchId INT,
---   Url TEXT,
---   ThumbUrl TEXT,
---   Title TEXT,
---   AddedTime DATETIME,
---   FOREIGN KEY(UserId) REFERENCES Users(UserId)
--- );
+CREATE TABLE Galleries (
+  UserId TEXT,
+  SearchBatchId INT,
+  Url TEXT,
+  ThumbUrl TEXT,
+  Title TEXT,
+  AddedTime DATETIME,
+  FOREIGN KEY(UserId) REFERENCES Users(UserId)
+);
 
--- DROP TABLE WhiteList;
--- CREATE TABLE Whitelist (
---   Email TEXT PRIMARY KEY,
---   AddedTime DATETIME
--- );
+CREATE TABLE Whitelist (
+  Email TEXT PRIMARY KEY,
+  AddedTime DATETIME
+);
