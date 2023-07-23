@@ -53,63 +53,56 @@ app.get('/api/hentai-stalker/auth/google/redirect',
     failureMessage: true
   }),
   authMiddleware,
-  (req, res) => { res.redirect("/hentai-stalker"); }
+  (req, res) => { return res.redirect("/hentai-stalker"); }
 );
 
 app.get('/api/hentai-stalker/auth/google/logout', (req: any, res, next) => {
   console.log('logout');
   req.logout((err) => {
     if (err) return next(err);
-    res.redirect("/hentai-stalker");
+    return res.redirect("/hentai-stalker");
   });
 });
 
 app.get('/api/hentai-stalker/user', authMiddleware, (req: any, res) => {
-  if (req.user) res.status(200).json(req.user);
-  res.status(403);
+  if (req.user) return res.status(200).json(req.user);
+  return res.status(403).send("Cannot get user data.");
 });
 
 // add keyword
-// app.post('/hentai-stalker/api/keywords/add', async (req, res) => {
-//   // req.body = { token, keywordId, keyword }
-//   const userData = await verifyUser(req.body.token);
-//   if (!userData) {
-//     res.status(403).json({ error: "User verification failed" });
-//     return;
-//   };
+app.post('/api/hentai-stalker/keywords/add', authMiddleware, async (req: any, res) => {
+  db.run(
+    `INSERT INTO keywords (UserId, KeywordId, Keyword, AddedTime)
+    VALUES (?, ?, ?, DATETIME('now'));`,
+    [req.user.id, req.body.keywordId, req.body.keyword],
+    (err) => {
+      if (err) {
+        console.error('Error adding keyword', req.body, err.message);
+        return res.status(403).send("Error adding keyword");
+      }
+      console.log('New keyword', req.body.keyword, 'added.');
+      return res.status(200).send();
+    }
+  );
+});
 
-//   db.run(
-//     `INSERT INTO keywords (UserId, KeywordId, Keyword, AddedTime)
-//     VALUES (?, ?, ?, DATETIME('now'));`,
-//     [userData.sub, req.body.keywordId, req.body.keyword],
-//     (err) => {
-//       if (err) {
-//         console.error('Error adding keyword', req.body, err.message);
-//         res.status(500);
-//       }
-//       res.status(200);
-//     }
-//   );
-// });
-
-// // get keywords
-// app.get('/hentai-stalker/api/keywords', async (req, res) => {
-//   // req.body = { token }
-//   const userData = await verifyUser(req.body.token);
-//   if (!userData) {
-//     res.status(403).json({ error: "User verification failed" });
-//     return;
-//   };
-
-//   db.all(
-//     `SELECT (Keyword, AddedTime) FROM Keywords WHERE UserId = ?`, [userData.sub],
-//     (err, rows) => {
-//       if (err) {
-//         console.error('error getting keywords', req.body, err.message);
-//         res.status(500);
-//       }
-//       res.status(200).json(rows);
-//     });
-// });
+// get keywords
+app.get('/api/hentai-stalker/keywords', authMiddleware, async (req: any, res) => {
+  db.all(
+    `SELECT Keyword, KeywordId, AddedTime FROM Keywords WHERE UserId = ?`, [req.user.id],
+    (err, rows) => {
+      if (err) {
+        console.error('Error getting keywords', req.body, err.message);
+        return res.status(403).send('Error getting keywords');
+      }
+      return res.status(200).json({
+        value: rows.map((row: any) => ({
+          keyword: row.Keyword,
+          keywordId: row.KeywordId,
+          addedTime: row.AddedTime
+        }))
+      });
+    });
+});
 
 app.listen(8034, () => console.log('Server is running on port 8034'));
