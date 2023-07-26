@@ -1,16 +1,21 @@
 <script lang="ts">
-  import { Avatar, Drawer, drawerStore } from "@skeletonlabs/skeleton";
   import type { DrawerSettings } from "@skeletonlabs/skeleton";
   import { SvelteComponent, onMount } from "svelte";
   import Icon from "@iconify/svelte";
   import { v4 as uuidv4 } from "uuid";
   import type { KeywordItem, UserData } from "./types";
+  import UserSection from "./lib/UserSection.svelte";
 
-  const authUrl = "/api/hentai-stalker/auth/google";
   let userData: UserData = null;
   let keywordInputDisabled = false;
   let newKeyWord: string = "";
   let keywords: KeywordItem[] = [];
+
+  let showSidePanel: boolean = false;
+  $: mainSectionStyle = showSidePanel
+    ? "h-full lg:grid lg:grid-cols-[20rem_1fr]"
+    : "h-full";
+  $: sidePanelDisplayStyle = showSidePanel ? "grid" : "hidden";
 
   async function fetchKeywords(): Promise<KeywordItem[]> {
     try {
@@ -43,8 +48,8 @@
     keywordInputDisabled = false;
   }
 
-  async function logout() {
-    await fetch("/api/hentai-stalker/auth/google/logout");
+  function onLogout(e) {
+    if (e.detail.error) return;
     userData = null;
     keywords = [];
   }
@@ -56,40 +61,30 @@
       userData = await data.json();
       keywords = await fetchKeywords();
     } catch (e) {
-      console.error("Cannot fetch user data", e);
+      console.log("Cannot fetch user data", e);
     }
   });
 </script>
 
-<main class="h-full lg:grid lg:grid-cols-[20rem_1fr]">
-  <div class="grid grid-rows-[auto_1fr] border-r border-surface-300 h-full">
-    <!-- user -->
-    <section class="grid grid-rows-[auto_1fr_auto]">
-      {#if !userData}
-        <div
-          class="border-b border-surface-300 pl-4 pr-2 py-2 grid grid-cols-[auto_1fr] items-center"
-        >
-          <Avatar initials="?" class="w-10 mr-4" />
-          <a class="button google" href={authUrl}>
-            <button class="btn variant-outline-primary px-4 py-2">
-              Sign in with Google
-            </button>
-          </a>
-        </div>
-      {:else}
-        <div
-          class="border-b border-surface-300 pl-4 pr-2 py-2 grid grid-cols-[auto_1fr_auto] items-center"
-        >
-          <Avatar src={userData.pictureUrl} class="w-10 mr-4" />
-          <div class="flex-grow flex-shrink overflow-hidden">
-            <h1 class="text-lg">{userData.name}</h1>
-            <h2 class="text-sm text-surface-500">{userData.email}</h2>
-          </div>
-          <button class="btn-icon variant-soft-surfacee" on:click={logout}>
-            <Icon icon="material-symbols:logout" height="1.5rem" />
-          </button>
-        </div>
-      {/if}
+<main class={mainSectionStyle}>
+  <!-- Side panel section -->
+  <div
+    class="{sidePanelDisplayStyle} grid-rows-[auto_auto_1fr] border-r border-surface-300 h-full"
+  >
+    <!-- close button -->
+    <section class="border-b border-surface-300 pl-4 pr-2 py-2">
+      <button
+        class="btn-icon variant-soft-surface"
+        on:click={() => {
+          showSidePanel = false;
+        }}
+      >
+        <Icon icon="material-symbols:close" height="1.5rem" />
+      </button>
+    </section>
+    <UserSection {userData} on:logout={onLogout} />
+    <section>
+      <!-- keyword input -->
       <div class="px-4 py-4">
         <form
           class="input-group input-group-divider grid grid-cols-[1fr_auto]"
@@ -107,10 +102,8 @@
           </button>
         </form>
       </div>
-    </section>
 
-    <!-- keywords -->
-    <section>
+      <!-- keywords -->
       <ol class="list">
         {#each keywords as keywordItem}
           <li>
@@ -130,5 +123,21 @@
     </section>
   </div>
 
-  <section>galleries</section>
+  <!-- gallery section -->
+  <section>
+    <section class="px-4 py-2 flex items-center">
+      {#if !showSidePanel}
+        <button
+          class="btn-icon variant-soft-surface mr-2"
+          on:click={() => {
+            showSidePanel = true;
+          }}
+        >
+          <Icon icon="material-symbols:menu" height="1.5rem" />
+        </button>
+        <h1>Hentai-Stalker</h1>
+      {/if}
+    </section>
+    galleries
+  </section>
 </main>
