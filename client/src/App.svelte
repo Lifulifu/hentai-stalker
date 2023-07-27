@@ -16,6 +16,7 @@
     ? "h-full lg:grid lg:grid-cols-[20rem_1fr]"
     : "h-full";
   $: sidePanelDisplayStyle = showSidePanel ? "grid" : "hidden";
+  $: galleriesSectionDisplayStyle = showSidePanel ? "hidden" : "block";
 
   async function fetchKeywords(): Promise<KeywordItem[]> {
     try {
@@ -69,10 +70,12 @@
 <main class={mainSectionStyle}>
   <!-- Side panel section -->
   <div
-    class="{sidePanelDisplayStyle} grid-rows-[auto_auto_1fr] border-r border-surface-300 h-full"
+    class="{sidePanelDisplayStyle} grid-rows-[auto_auto_1fr] border-r border-surface-300 bg-surface-50 h-full"
   >
     <!-- close button -->
-    <section class="border-b border-surface-300 pl-4 pr-2 py-2">
+    <section
+      class="sticky top-0 border-b border-surface-300 pl-4 pr-2 py-2 bg-surface-50 z-50"
+    >
       <button
         class="btn-icon variant-soft-surface"
         on:click={() => {
@@ -83,7 +86,7 @@
       </button>
     </section>
     <UserSection {userData} on:logout={onLogout} />
-    <section>
+    <section class="grid grid-rows-[auto_1fr]">
       <!-- keyword input -->
       <div class="px-4 py-4">
         <form
@@ -104,14 +107,16 @@
       </div>
 
       <!-- keywords -->
-      <ol class="list">
+      <ol class="list overflow-y-auto">
         {#each keywords as keywordItem}
           <li>
             <button
               class="w-full px-4 py-2 text-left hover:bg-primary-500 hover:text-white grid grid-cols-[2rem_1fr_auto] items-center"
             >
               <span class="">💀</span>
-              <span class="overflow-hidden">{keywordItem.keyword}</span>
+              <span class="overflow-x-hidden whitespace-nowrap"
+                >{keywordItem.keyword}</span
+              >
               <span class="flex gap-1 text-surface-500">
                 <Icon icon="material-symbols:filter-alt" height="1.3rem" />
                 <Icon icon="material-symbols:close-rounded" height="1.3rem" />
@@ -124,7 +129,7 @@
   </div>
 
   <!-- gallery section -->
-  <section>
+  <section class={galleriesSectionDisplayStyle}>
     <section class="px-4 py-2 flex items-center">
       {#if !showSidePanel}
         <button
