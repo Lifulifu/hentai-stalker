@@ -1,6 +1,5 @@
 <script lang="ts">
-  import type { DrawerSettings } from "@skeletonlabs/skeleton";
-  import { SvelteComponent, onMount } from "svelte";
+  import { onMount } from "svelte";
   import Icon from "@iconify/svelte";
   import { v4 as uuidv4 } from "uuid";
   import type { KeywordItem, UserData } from "./types";
@@ -11,7 +10,7 @@
   let newKeyWord: string = "";
   let keywords: KeywordItem[] = [];
 
-  let showSidePanel: boolean = false;
+  let showSidePanel: boolean = true;
   $: mainSectionStyle = showSidePanel
     ? "h-full lg:grid lg:grid-cols-[20rem_1fr]"
     : "h-full";
@@ -23,7 +22,10 @@
       let res: any = await fetch("/api/hentai-stalker/keywords");
       res = await res.json();
       console.log(res);
-      return res.value;
+      // new to old
+      return res.value.sort(
+        (a, b) => Date.parse(b.addedTime) - Date.parse(a.addedTime)
+      );
     } catch (e) {
       console.error("Cannot fetch keywords", e);
       return [];
@@ -42,9 +44,30 @@
         }),
       });
       newKeyWord = "";
+      // update modified keywords
       keywords = await fetchKeywords();
     } catch (e) {
       console.error("Cannot add new keyword", e);
+    }
+    keywordInputDisabled = false;
+  }
+
+  async function removeKeyword(keyword: string, keywordId: string) {
+    console.log("remove");
+    keywordInputDisabled = true;
+    try {
+      await fetch("/api/hentai-stalker/keywords/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keywordId: keywordId,
+          keyword: keyword,
+        }),
+      });
+      // update modified keywords
+      keywords = await fetchKeywords();
+    } catch (e) {
+      console.error("Cannot remove keyword", e);
     }
     keywordInputDisabled = false;
   }
@@ -118,8 +141,15 @@
                 >{keywordItem.keyword}</span
               >
               <span class="flex gap-1 text-surface-500">
-                <Icon icon="material-symbols:filter-alt" height="1.3rem" />
-                <Icon icon="material-symbols:close-rounded" height="1.3rem" />
+                <button>
+                  <Icon icon="material-symbols:filter-alt" height="1.3rem" />
+                </button>
+                <button
+                  on:click={() =>
+                    removeKeyword(keywordItem.keyword, keywordItem.keywordId)}
+                >
+                  <Icon icon="material-symbols:close-rounded" height="1.3rem" />
+                </button>
               </span>
             </button>
           </li>

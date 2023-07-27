@@ -21,17 +21,23 @@ interface GalleryMetaData {
   tags: string[]; // [Array]
 }
 
-async function searchGalleryUrls(browser: Browser, query: string): Promise<string[]> {
-  // front page, type query and submit search
+const db = new sqlite3.Database('db/main.db', (err) => {
+  if (err) console.error('error connecting to db', err.message);
+});
+
+async function getGalleryUrlsByKeyword(browser: Browser, query: string): Promise<string[]> {
+  // go to search result page
   const page = await browser.newPage();
-  await page.goto('https://e-hentai.org/');
-  const searchInput = await page.waitForSelector('#f_search');
-  await searchInput?.type(query);
-  await page.click('input[type="submit"][value="Search"');
+  await page.goto(encodeURI(`https://e-hentai.org/?f_search=${query}`));
 
   // parse urls from search result table rows (only 1st page)
   const searchResultSelector = '.searchnav ~ table tr';
-  await page.waitForSelector(searchResultSelector, { timeout: 5000 });
+  try {
+    await page.waitForSelector(searchResultSelector, { timeout: 5000 });
+  } catch (e) {
+    console.log("Failed to get galleries from keyword", query, e);
+    return [];
+  }
   const urls = await page.evaluate((searchResultSelector: string) => {
     const trs = Array.from(document.querySelectorAll(searchResultSelector)) as HTMLTableRowElement[];
     return trs.map((tr) => {
@@ -40,7 +46,7 @@ async function searchGalleryUrls(browser: Browser, query: string): Promise<strin
     }).filter(url => url); // drop null values and empty string
   }, searchResultSelector);
 
-  page.close();
+  await page.close();
   return urls as string[];
 }
 
@@ -60,11 +66,46 @@ async function getGalleryData(url: string): Promise<{ gmetadata: GalleryMetaData
   return res.json();
 }
 
-async function run() {
+async function runAllKeywords(browser: Browser) {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT DISTINCT UserId FROM Keywords`,
+      async (err, rows: any) => {
+        if (err) {
+          console.log("Failed to get all users", err);
+          reject(err);
+        }
+        for (let row of rows) {
+          if (row.UserId) await runAllKeywordsForUser(browser, row.UserId);
+        }
+        resolve(null);
+      });
+  });
+}
+
+async function runAllKeywordsForUser(browser: Browser, userId: string) {
+  // get all keywords from user
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT Keyword FROM Keywords WHERE UserId = ?`, [userId],
+      async (err, rows: any) => {
+        if (err) {
+          console.log("Failed to select keywords from", userId);
+          reject(err);
+        }
+        for (let row of rows) {
+          if (row.Keyword) await runKeyword(browser, userId, row.Keyword);
+        }
+        resolve(null);
+      });
+  });
+}
+
+async function runKeyword(browser: Browser, userId: string, keyword: string) {
+  console.log("running keyword", keyword);
   // get gallery urls from search result
-  const browser = await puppeteer.launch();
-  const resultUrls = await searchGalleryUrls(browser, 'ronna');
-  await browser.close();
+  const resultUrls = await getGalleryUrlsByKeyword(browser, keyword);
+  if (resultUrls.length === 0) return;
 
   // get gallery data from urls
   const galleryData: ({ url: string; } & GalleryMetaData)[] = [];
@@ -79,24 +120,25 @@ async function run() {
   }
 
   // write gallery data to DB
-  const db = new sqlite3.Database('db/main.db', (err) => {
-    if (err) console.error('error connecting to db', err.message);
-  });
   db.serialize(() => {
     db.run('BEGIN TRANSACTION');
-    createGalleryTable(db);
     const insertQuery = `
-      INSERT INTO Galleries (Url, ThumbUrl, Title, DateAdded)
-      VALUES (?, ?, ?, CURRENT_DATE);`;
+      INSERT INTO Galleries (UserId, Url, ThumbUrl, Title, AddedTime)
+      VALUES (?, ?, ?, ?, DATETIME('NOW'));`;
     for (const data of galleryData) {
-      db.run(insertQuery, [data.url, data.thumb, data.title], (err) => {
+      db.run(insertQuery, [userId, data.url, data.thumb, data.title], (err) => {
         if (err) console.error('error inserting data', err.message);
       });
     }
     db.run('COMMIT');
   });
 
-  db.close();
+}
+
+async function run() {
+  const browser = await puppeteer.launch({ headless: 'new' });
+  await runAllKeywords(browser);
+  await browser.close();
 }
 
 run();

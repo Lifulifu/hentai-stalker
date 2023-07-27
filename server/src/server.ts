@@ -43,6 +43,7 @@ async function authMiddleware(req, res, next) {
   res.redirect("/api/hentai-stalker/auth/google");
 }
 
+// auth
 app.get('/api/hentai-stalker/auth/google',
   passport.authenticate('google', { scope: ['email', 'profile'] })
 );
@@ -81,6 +82,21 @@ app.post('/api/hentai-stalker/keywords/add', authMiddleware, async (req: any, re
         return res.status(403).send("Error adding keyword");
       }
       console.log('New keyword', req.body.keyword, 'added.');
+      return res.status(200).send();
+    }
+  );
+});
+
+// remove keyword
+app.post('/api/hentai-stalker/keywords/remove', authMiddleware, async (req: any, res) => {
+  db.run(`DELETE FROM keywords WHERE UserId = ? AND KeywordId = ?`,
+    [req.user.id, req.body.keywordId],
+    (err) => {
+      if (err) {
+        console.error('Error removing keyword', req.body, err.message);
+        return res.status(403).send("Error removing keyword");
+      }
+      console.log('Keyword', req.body.keyword, 'removed.');
       return res.status(200).send();
     }
   );
