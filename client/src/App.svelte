@@ -9,19 +9,19 @@
   let keywordInputDisabled = false;
   let newKeyWord: string = "";
   let keywords: KeywordItem[] = [];
+  let galleriesData: any[] = [];
 
   let showSidePanel: boolean = true;
   $: mainSectionStyle = showSidePanel
     ? "h-full lg:grid lg:grid-cols-[20rem_1fr]"
     : "h-full";
   $: sidePanelDisplayStyle = showSidePanel ? "grid" : "hidden";
-  $: galleriesSectionDisplayStyle = showSidePanel ? "hidden" : "block";
+  $: galleriesSectionDisplayStyle = showSidePanel ? "hidden lg:block" : "block";
 
   async function fetchKeywords(): Promise<KeywordItem[]> {
     try {
       let res: any = await fetch("/api/hentai-stalker/keywords");
       res = await res.json();
-      console.log(res);
       // new to old
       return res.value.sort(
         (a, b) => Date.parse(b.addedTime) - Date.parse(a.addedTime)
@@ -72,6 +72,20 @@
     keywordInputDisabled = false;
   }
 
+  async function fetchGalleriesData() {
+    try {
+      let res: any = await fetch("/api/hentai-stalker/galleries");
+      res = await res.json();
+      // new to old
+      return res.value.sort(
+        (a, b) => Date.parse(b.addedTime) - Date.parse(a.addedTime)
+      );
+    } catch (e) {
+      console.error("Cannot fetch keywords", e);
+      return [];
+    }
+  }
+
   function onLogout(e) {
     if (e.detail.error) return;
     userData = null;
@@ -83,10 +97,18 @@
       const data = await fetch("/api/hentai-stalker/user");
       if (!data.ok) throw new Error();
       userData = await data.json();
-      keywords = await fetchKeywords();
     } catch (e) {
-      console.log("Cannot fetch user data", e);
+      console.log("Failed to fetch user data", e);
+      // If userData can't be fetched, don't fetch further data
+      return;
     }
+    // these can execute in parallel
+    fetchKeywords()
+      .then((res) => (keywords = res))
+      .catch((e) => console.error("Failed to fetch keywords.", e));
+    fetchGalleriesData()
+      .then((res) => (galleriesData = res))
+      .catch((e) => console.error("Failed to fetch galleries.", e));
   });
 </script>
 
@@ -159,7 +181,8 @@
   </div>
 
   <!-- gallery section -->
-  <section class={galleriesSectionDisplayStyle}>
+  <section class="{galleriesSectionDisplayStyle} ">
+    <!-- logo and menu button -->
     <section class="px-4 py-2 flex items-center">
       {#if !showSidePanel}
         <button
@@ -170,9 +193,11 @@
         >
           <Icon icon="material-symbols:menu" height="1.5rem" />
         </button>
-        <h1>Hentai-Stalker</h1>
       {/if}
+      <h1>Hentai Stalker</h1>
     </section>
-    galleries
+
+    <!-- gallery -->
+    <section class="px-4 py-2" />
   </section>
 </main>

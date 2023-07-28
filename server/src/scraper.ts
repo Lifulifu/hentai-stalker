@@ -86,18 +86,30 @@ async function runAllKeywords(browser: Browser) {
 async function runAllKeywordsForUser(browser: Browser, userId: string) {
   // get all keywords from user
   return new Promise((resolve, reject) => {
-    db.all(
-      `SELECT Keyword FROM Keywords WHERE UserId = ?`, [userId],
-      async (err, rows: any) => {
-        if (err) {
-          console.log("Failed to select keywords from", userId);
-          reject(err);
-        }
-        for (let row of rows) {
-          if (row.Keyword) await runKeyword(browser, userId, row.Keyword);
-        }
-        resolve(null);
-      });
+    db.serialize(() => {
+      // delete any previous galleries for that user
+      db.run(`DELETE FROM Galleries WHERE UserId = ?`, [userId],
+        (err) => {
+          if (err) {
+            console.log("Failed to delete outdated user galleries.");
+            reject(err);
+          }
+        });
+
+      // get user's keywords, perform search and save to Galleries
+      db.all(
+        `SELECT Keyword FROM Keywords WHERE UserId = ?`, [userId],
+        async (err, rows: any) => {
+          if (err) {
+            console.log("Failed to select keywords from", userId);
+            reject(err);
+          }
+          for (let row of rows) {
+            if (row.Keyword) await runKeyword(browser, userId, row.Keyword);
+          }
+          resolve(null);
+        });
+    });
   });
 }
 

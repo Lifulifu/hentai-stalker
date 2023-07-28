@@ -121,4 +121,26 @@ app.get('/api/hentai-stalker/keywords', authMiddleware, async (req: any, res) =>
     });
 });
 
+// get galleries
+app.get('/api/hentai-stalker/galleries', authMiddleware, async (req: any, res) => {
+  db.all(
+    `SELECT Url, ThumbUrl, Title, AddedTime FROM Galleries WHERE UserId = ?`,
+    [req.user.id],
+    (err, rows) => {
+      if (err) {
+        console.error('Error getting galleries', req.body, err.message);
+        return res.status(403).send('Error getting galleries');
+      }
+      return res.status(200).json({
+        value: rows.map((row: any) => ({
+          url: row.Url,
+          thumbUrl: row.ThumbUrl,
+          title: row.Title,
+          addedTime: row.AddedTime
+        }))
+      });
+    }
+  );
+});
+
 app.listen(8034, () => console.log('Server is running on port 8034'));
