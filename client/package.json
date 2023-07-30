@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@types/gapi.auth2": "^0.0.57",
+    "date-fns": "^2.30.0",
     "uuid": "^9.0.0"
   }
 }

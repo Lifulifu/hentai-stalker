@@ -35,7 +35,7 @@ async function getGalleryUrlsByKeyword(browser: Browser, query: string): Promise
   try {
     await page.waitForSelector(searchResultSelector, { timeout: 5000 });
   } catch (e) {
-    console.log("Failed to get galleries from keyword", query, e);
+    console.log("Failed to get galleries from keyword", query);
     return [];
   }
   const urls = await page.evaluate((searchResultSelector: string) => {
@@ -76,6 +76,7 @@ async function runAllKeywords(browser: Browser) {
           reject(err);
         }
         for (let row of rows) {
+          console.log("running for user", row.UserId);
           if (row.UserId) await runAllKeywordsForUser(browser, row.UserId);
         }
         resolve(null);
@@ -114,7 +115,6 @@ async function runAllKeywordsForUser(browser: Browser, userId: string) {
 }
 
 async function runKeyword(browser: Browser, userId: string, keyword: string) {
-  console.log("running keyword", keyword);
   // get gallery urls from search result
   const resultUrls = await getGalleryUrlsByKeyword(browser, keyword);
   if (resultUrls.length === 0) return;
@@ -135,10 +135,10 @@ async function runKeyword(browser: Browser, userId: string, keyword: string) {
   db.serialize(() => {
     db.run('BEGIN TRANSACTION');
     const insertQuery = `
-      INSERT INTO Galleries (UserId, Url, ThumbUrl, Title, AddedTime)
-      VALUES (?, ?, ?, ?, DATETIME('NOW'));`;
+      INSERT INTO Galleries (UserId, Keyword, Url, ThumbUrl, Title, PostedTime, AddedTime)
+      VALUES (?, ?, ?, ?, ?, DATETIME(?, 'unixepoch'), DATETIME('NOW'));`;
     for (const data of galleryData) {
-      db.run(insertQuery, [userId, data.url, data.thumb, data.title], (err) => {
+      db.run(insertQuery, [userId, keyword, data.url, data.thumb, data.title, data.posted], (err) => {
         if (err) console.error('error inserting data', err.message);
       });
     }
@@ -148,9 +148,11 @@ async function runKeyword(browser: Browser, userId: string, keyword: string) {
 }
 
 async function run() {
+  console.log(`--- [${new Date()}] Running scraper for all users ---`);
   const browser = await puppeteer.launch({ headless: 'new' });
   await runAllKeywords(browser);
   await browser.close();
+  console.log(`--- [${new Date()}] End ---`);
 }
 
 run();

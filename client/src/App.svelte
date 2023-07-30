@@ -4,6 +4,7 @@
   import { v4 as uuidv4 } from "uuid";
   import type { KeywordItem, UserData } from "./types";
   import UserSection from "./lib/UserSection.svelte";
+  import Gallery from "./lib/Gallery.svelte";
 
   let userData: UserData = null;
   let keywordInputDisabled = false;
@@ -16,7 +17,7 @@
     ? "h-full lg:grid lg:grid-cols-[20rem_1fr]"
     : "h-full";
   $: sidePanelDisplayStyle = showSidePanel ? "grid" : "hidden";
-  $: galleriesSectionDisplayStyle = showSidePanel ? "hidden lg:block" : "block";
+  $: galleriesSectionDisplayStyle = showSidePanel ? "hidden lg:grid" : "grid";
 
   async function fetchKeywords(): Promise<KeywordItem[]> {
     try {
@@ -77,8 +78,9 @@
       let res: any = await fetch("/api/hentai-stalker/galleries");
       res = await res.json();
       // new to old
+      console.dir(res);
       return res.value.sort(
-        (a, b) => Date.parse(b.addedTime) - Date.parse(a.addedTime)
+        (a, b) => Date.parse(b.postedTime) - Date.parse(a.postedTime)
       );
     } catch (e) {
       console.error("Cannot fetch keywords", e);
@@ -107,7 +109,7 @@
       .then((res) => (keywords = res))
       .catch((e) => console.error("Failed to fetch keywords.", e));
     fetchGalleriesData()
-      .then((res) => (galleriesData = res))
+      .then((res) => (galleriesData = res.slice(0, 80)))
       .catch((e) => console.error("Failed to fetch galleries.", e));
   });
 </script>
@@ -181,7 +183,7 @@
   </div>
 
   <!-- gallery section -->
-  <section class="{galleriesSectionDisplayStyle} ">
+  <section class="{galleriesSectionDisplayStyle} h-full grid-rows-[auto_1fr]">
     <!-- logo and menu button -->
     <section class="px-4 py-2 flex items-center">
       {#if !showSidePanel}
@@ -198,6 +200,12 @@
     </section>
 
     <!-- gallery -->
-    <section class="px-4 py-2" />
+    <section
+      class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2 px-4 py-2 bg-surface-200"
+    >
+      {#each galleriesData as galleryData}
+        <Gallery data={galleryData} />
+      {/each}
+    </section>
   </section>
 </main>

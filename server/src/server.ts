@@ -105,7 +105,7 @@ app.post('/api/hentai-stalker/keywords/remove', authMiddleware, async (req: any,
 // get keywords
 app.get('/api/hentai-stalker/keywords', authMiddleware, async (req: any, res) => {
   db.all(
-    `SELECT Keyword, KeywordId, AddedTime FROM Keywords WHERE UserId = ?`, [req.user.id],
+    `SELECT * FROM Keywords WHERE UserId = ?`, [req.user.id],
     (err, rows) => {
       if (err) {
         console.error('Error getting keywords', req.body, err.message);
@@ -124,7 +124,7 @@ app.get('/api/hentai-stalker/keywords', authMiddleware, async (req: any, res) =>
 // get galleries
 app.get('/api/hentai-stalker/galleries', authMiddleware, async (req: any, res) => {
   db.all(
-    `SELECT Url, ThumbUrl, Title, AddedTime FROM Galleries WHERE UserId = ?`,
+    `SELECT * FROM Galleries WHERE UserId = ?`,
     [req.user.id],
     (err, rows) => {
       if (err) {
@@ -133,10 +133,12 @@ app.get('/api/hentai-stalker/galleries', authMiddleware, async (req: any, res) =
       }
       return res.status(200).json({
         value: rows.map((row: any) => ({
+          keyword: row.Keyword,
           url: row.Url,
           thumbUrl: row.ThumbUrl,
           title: row.Title,
-          addedTime: row.AddedTime
+          addedTime: row.AddedTime,
+          postedTime: row.PostedTime
         }))
       });
     }
