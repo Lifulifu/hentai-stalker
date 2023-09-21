@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --base=/hentai-stalker --port 8035 --host",
-    "build": "vite build",
-    "preview": "vite preview",
+    "build": "vite build --base=/hentai-stalker",
+    "preview": "vite preview --port 8035 --host",
     "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {

@@ -20,7 +20,7 @@
 <section class="grid grid-rows-[auto_1fr_auto]">
   {#if !userData}
     <div
-      class="border-b border-surface-300 pl-4 pr-2 py-2 grid grid-cols-[auto_1fr] items-center"
+      class="border-b border-surface-300 px-4 py-2 grid grid-cols-[auto_1fr] items-center"
     >
       <Avatar initials="?" class="w-10 mr-4" />
       <a class="button google" href={authUrl}>
@@ -31,7 +31,7 @@
     </div>
   {:else}
     <div
-      class="border-b border-surface-300 pl-4 pr-2 py-2 grid grid-cols-[auto_1fr_auto] items-center"
+      class="border-b border-surface-300 px-4 py-2 grid grid-cols-[auto_1fr_auto] items-center"
     >
       <Avatar src={userData.pictureUrl} class="w-10 mr-4" />
       <div class="flex-grow flex-shrink overflow-hidden">

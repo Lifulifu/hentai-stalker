@@ -5,6 +5,8 @@
   import type { KeywordItem, UserData } from "./types";
   import UserSection from "./lib/UserSection.svelte";
   import Gallery from "./lib/Gallery.svelte";
+  import {formatDistanceToNow} from "date-fns"
+  import {parseDate} from "./lib/util"
 
   let userData: UserData = null;
   let keywordInputDisabled = false;
@@ -18,6 +20,12 @@
     : "h-full";
   $: sidePanelDisplayStyle = showSidePanel ? "grid" : "hidden";
   $: galleriesSectionDisplayStyle = showSidePanel ? "hidden lg:grid" : "grid";
+
+  let lastUpdateTimeAgo = '-';
+  $: if (galleriesData?.length > 0) {
+    lastUpdateTimeAgo = formatDistanceToNow(parseDate(galleriesData[0].addedTime));
+  }
+  let isScraping = false;
 
   async function fetchKeywords(): Promise<KeywordItem[]> {
     try {
@@ -88,13 +96,20 @@
     }
   }
 
+  async function doScrape() {
+    isScraping = true;
+    await fetch("/api/hentai-stalker/scrape");
+    isScraping = false;
+    init();
+  }
+
   function onLogout(e) {
     if (e.detail.error) return;
     userData = null;
     keywords = [];
   }
 
-  onMount(async () => {
+  async function init() {
     try {
       const data = await fetch("/api/hentai-stalker/user");
       if (!data.ok) throw new Error();
@@ -104,14 +119,21 @@
       // If userData can't be fetched, don't fetch further data
       return;
     }
+    console.log('fetching keywords...')
     // these can execute in parallel
     fetchKeywords()
       .then((res) => (keywords = res))
       .catch((e) => console.error("Failed to fetch keywords.", e));
+    console.log('fetching galleries...')
     fetchGalleriesData()
       .then((res) => (galleriesData = res.slice(0, 80)))
       .catch((e) => console.error("Failed to fetch galleries.", e));
+  }
+
+  onMount(async () => {
+    await init();
   });
+
 </script>
 
 <main class={mainSectionStyle}>
@@ -158,23 +180,15 @@
         {#each keywords as keywordItem}
           <li>
             <button
-              class="w-full px-4 py-2 text-left hover:bg-primary-500 hover:text-white grid grid-cols-[2rem_1fr_auto] items-center"
+              class="w-full px-4 py-2 text-left hover:bg-primary-500 hover:text-white grid grid-cols-[1fr_auto] items-center"
             >
-              <span class="">💀</span>
-              <span class="overflow-x-hidden whitespace-nowrap"
-                >{keywordItem.keyword}</span
+              <span class="overflow-x-hidden whitespace-nowrap" >{keywordItem.keyword}</span >
+              <button
+                class="text-surface-500"
+                on:click={() => removeKeyword(keywordItem.keyword, keywordItem.keywordId)}
               >
-              <span class="flex gap-1 text-surface-500">
-                <button>
-                  <Icon icon="material-symbols:filter-alt" height="1.3rem" />
-                </button>
-                <button
-                  on:click={() =>
-                    removeKeyword(keywordItem.keyword, keywordItem.keywordId)}
-                >
-                  <Icon icon="material-symbols:close-rounded" height="1.3rem" />
-                </button>
-              </span>
+                <Icon icon="material-symbols:close-rounded"/>
+              </button>
             </button>
           </li>
         {/each}
@@ -183,9 +197,9 @@
   </div>
 
   <!-- gallery section -->
-  <section class="{galleriesSectionDisplayStyle} h-full grid-rows-[auto_1fr]">
+  <section class="{galleriesSectionDisplayStyle} h-full grid-rows-[auto_auto_1fr]">
     <!-- logo and menu button -->
-    <section class="px-4 py-2 flex items-center">
+    <section class="px-4 py-4 flex items-center">
       {#if !showSidePanel}
         <button
           class="btn-icon variant-soft-surface mr-2"
@@ -196,12 +210,31 @@
           <Icon icon="material-symbols:menu" height="1.5rem" />
         </button>
       {/if}
-      <h1>Hentai Stalker</h1>
+      <div class="flex flex-grow items-center justify-center gap-2">
+        <h1 class="text-2xl font-bold font-mono"> <span class="text-primary-500">H</span>entai <span class="text-primary-500">S</span>talker </h1>
+      </div>
+    </section>
+
+    <!-- galleries title and refresh button -->
+    <section class="px-4 py-2 flex items-center gap-2 bg-surface-200">
+      <Icon icon="material-symbols:book-outline" class="text-primary-500" height="1.5rem"/>
+      <h2 class="text-xl font-bold">Gallery</h2>
+
+      <span class="ml-auto text-surface-500">
+        {#if isScraping}
+          Scraping...
+        {:else}
+          Last update: {lastUpdateTimeAgo}
+        {/if}
+      </span>
+      <button disabled={isScraping} class="btn-icon variant-soft-surface" on:click={doScrape}>
+        <Icon icon="material-symbols:refresh" class="{isScraping ? 'animate-spin' : ''}" height="1.5rem"/>
+      </button>
     </section>
 
     <!-- gallery -->
     <section
-      class="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-2 px-4 py-2 bg-surface-200"
+      class="grid grid-cols-2 items-start lg:grid-cols-[repeat(auto-fill,minmax(210px,1fr))] gap-2 px-4 py-2 bg-surface-200"
     >
       {#each galleriesData as galleryData}
         <Gallery data={galleryData} />

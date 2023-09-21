@@ -1,6 +1,6 @@
 import puppeteer, { Browser } from "puppeteer";
 import sqlite3 from "sqlite3";
-import { createGalleryTable, createKeywordsTable, createUsersTable } from "./db";
+import fs from 'fs';
 
 interface GalleryMetaData {
   gid: number, // 525116,
@@ -35,7 +35,7 @@ async function getGalleryUrlsByKeyword(browser: Browser, query: string): Promise
   try {
     await page.waitForSelector(searchResultSelector, { timeout: 5000 });
   } catch (e) {
-    console.log("Failed to get galleries from keyword", query);
+    console.log("Failed to get galleries from keyword", query, e);
     return [];
   }
   const urls = await page.evaluate((searchResultSelector: string) => {
@@ -147,12 +147,11 @@ async function runKeyword(browser: Browser, userId: string, keyword: string) {
 
 }
 
-async function run() {
-  console.log(`--- [${new Date()}] Running scraper for all users ---`);
+export async function runScraper(isManual: boolean, userId: string = null) {
+  fs.appendFileSync('./scraper_history.log', `--- [${new Date()}][${isManual ? 'manual' : 'scheduled'}] Running scraper ---\n`);
   const browser = await puppeteer.launch({ headless: 'new' });
-  await runAllKeywords(browser);
+  if (userId) await runAllKeywordsForUser(browser, userId);
+  else await runAllKeywords(browser);
   await browser.close();
-  console.log(`--- [${new Date()}] End ---`);
+  fs.appendFileSync('./scraper_history.log', `--- [${new Date()}] End ---\n\n`);
 }
-
-run();

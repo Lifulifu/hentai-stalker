@@ -3,6 +3,7 @@ import sqlite3 from "sqlite3";
 import passport from 'passport';
 require("./passport_config")(passport);
 import session from 'express-session';
+import { runScraper } from "./scraper";
 
 const app = express();
 app.use(express.json());
@@ -143,6 +144,12 @@ app.get('/api/hentai-stalker/galleries', authMiddleware, async (req: any, res) =
       });
     }
   );
+});
+
+// run scraper
+app.get('/api/hentai-stalker/scrape', authMiddleware, async (req: any, res) => {
+  await runScraper(true, req.user.id);
+  return res.status(200).send('success');
 });
 
 app.listen(8034, () => console.log('Server is running on port 8034'));

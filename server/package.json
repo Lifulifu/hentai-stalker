@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.ts",
   "scripts": {
-    "start:scraper": "ts-node src/scraper.ts",
+    "start:scraper": "ts-node src/run_scraper.ts",
     "start:server": "ts-node src/server.ts",
     "dev:server": "nodemon"
   },
